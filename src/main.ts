@@ -55,6 +55,11 @@ function updateShooterBubble() {
     shooterBubble.x += shooterBubble.dx;
     shooterBubble.y += shooterBubble.dy;
 
+    // Prevent bubble from moving backwards
+    if (shooterBubble.dy > 0) {
+        shooterBubble.dy = -5;
+    }
+
     // Check for collision with walls
     if (shooterBubble.x - BUBBLE_RADIUS <= 0 || shooterBubble.x + BUBBLE_RADIUS >= canvas.width) {
         shooterBubble.dx = -shooterBubble.dx;
@@ -134,6 +139,21 @@ function resetShooterBubble() {
     shooterBubble.color = colors[Math.floor(Math.random() * colors.length)];
 }
 
+// AI player
+function aiPlayer() {
+    const maxColor = shooterBubble.color;
+
+    // Find the first bubble of the maxColor
+    const targetBubble = bubbles.find(bubble => bubble.color === maxColor);
+
+    if (targetBubble) {
+        // Calculate the angle to the target bubble
+        const angle = Math.atan2(targetBubble.y - shooterBubble.y, targetBubble.x - shooterBubble.x);
+        shooterBubble.dx = 5 * Math.cos(angle);
+        shooterBubble.dy = 5 * Math.sin(angle);
+    }
+}
+
 // Handle mouse movement for aiming
 canvas.addEventListener('mousemove', (event) => {
     const rect = canvas.getBoundingClientRect();
@@ -153,22 +173,18 @@ canvas.addEventListener('click', () => {
 
 const bubbleCounter = document.getElementById('bubbleCounter');
 
-// Game loop
+// Update game loop to include AI player
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBubbles();
     drawShooterBubble();
     updateShooterBubble();
+    aiPlayer();
     if (bubbleCounter) {
         bubbleCounter.textContent = `Remaining Bubbles: ${bubbles.length}`;
     }
     requestAnimationFrame(gameLoop);
 }
-
-// Initialize game
-initBubbles();
-gameLoop();
-
 
 // Handle keyboard arrow keys for moving
 document.addEventListener('keydown', (event) => {
@@ -192,3 +208,7 @@ document.addEventListener('keyup', (event) => {
             break;
     }
 });
+
+// Initialize game
+initBubbles();
+gameLoop();
