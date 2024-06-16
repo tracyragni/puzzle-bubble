@@ -1,11 +1,12 @@
-// src/main.ts
-
 const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
 const context = canvas.getContext("2d")!;
 const scoreDisplay = document.getElementById("score") as HTMLElement;
+const restartButton = document.getElementById(
+  "restartButton"
+) as HTMLButtonElement;
 
 const rows = 12;
-const cols = 8;
+const cols = 20;
 const bubbleSize = 40;
 const colors = ["red", "green", "blue", "yellow", "purple", "cyan"];
 let bubbles: string[][] = [];
@@ -20,7 +21,13 @@ let shooterAngle = 0;
 let isShooting = false;
 let score = 0;
 
+restartButton.addEventListener("click", () => {
+  initializeGame();
+});
+
 function initializeGame() {
+  scoreDisplay.textContent = `Score: 0`;
+
   // Initialize bubbles
   for (let row = 0; row < rows; row++) {
     bubbles[row] = [];
@@ -117,7 +124,7 @@ canvas.addEventListener("mousemove", (event) => {
   shooterAngle = Math.atan2(canvas.height - mouseY, mouseX - canvas.width / 2);
 });
 
-canvas.addEventListener("click", (event) => {
+canvas.addEventListener("click", () => {
   if (!isShooting) {
     shootBubble();
   }
@@ -139,6 +146,12 @@ function moveCurrentBubble() {
     currentBubble.x + bubbleSize / 2 > canvas.width
   ) {
     currentBubble.dx = -currentBubble.dx;
+  }
+  if (
+    currentBubble.y - bubbleSize / 2 < 0 ||
+    currentBubble.y + bubbleSize / 2 > canvas.height
+  ) {
+    currentBubble.dy = -currentBubble.dy;
   }
 }
 
