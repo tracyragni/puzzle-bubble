@@ -4,9 +4,8 @@ const ctx = canvas.getContext('2d')!;
 const BUBBLE_RADIUS = 20;
 const BUBBLE_DIAMETER = BUBBLE_RADIUS * 2;
 const ROWS = 5;
-const COLUMNS = 10;
-
-const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
+const COLUMNS = 12; // Limit the width to 12 bubbles
+const colors = ['red', 'green', 'blue', 'yellow', 'purple', 'black'];
 
 let bubbles: { x: number, y: number, color: string }[] = [];
 let shooterBubble = {
@@ -63,15 +62,65 @@ function updateShooterBubble() {
 
     // Check for collision with top
     if (shooterBubble.y - BUBBLE_RADIUS <= 0) {
+        bubbles.push({ ...shooterBubble });
         resetShooterBubble();
     }
 
     // Check for collision with other bubbles
-    for (let bubble of bubbles) {
+    for (let i = 0; i < bubbles.length; i++) {
+        const bubble = bubbles[i];
         const dist = Math.hypot(bubble.x - shooterBubble.x, bubble.y - shooterBubble.y);
         if (dist < BUBBLE_DIAMETER) {
-            resetShooterBubble();
-            break;
+            // Calculate the closest grid position for the new bubble
+            let gridX = Math.round(shooterBubble.x / BUBBLE_DIAMETER) * BUBBLE_DIAMETER;
+            let gridY = Math.round(shooterBubble.y / BUBBLE_DIAMETER) * BUBBLE_DIAMETER;
+
+            // Adjust the new bubble's position based on the direction of the shooter bubble
+            if (shooterBubble.dx > 0) {
+                gridX = Math.floor(shooterBubble.x / BUBBLE_DIAMETER) * BUBBLE_DIAMETER;
+            } else if (shooterBubble.dx < 0) {
+                gridX = Math.ceil(shooterBubble.x / BUBBLE_DIAMETER) * BUBBLE_DIAMETER;
+            }
+
+            // Check if the new position is already occupied by another bubble
+            const isOccupied = bubbles.some(b => b.x === gridX && b.y === gridY);
+            if (!isOccupied) {
+                // Add the shooter bubble to the bubbles array at the new position
+                bubbles.push({ x: gridX, y: gridY, color: shooterBubble.color });
+                resetShooterBubble();
+                break;
+            }
+        }
+    }
+
+    checkForStacks(shooterBubble.color === 'black');
+}
+
+function checkForStacks(isBlack: boolean) {
+    const visited = new Set();
+    for (const bubble of bubbles) {
+        if (!visited.has(bubble)) {
+            const stack = [];
+            const queue = [bubble];
+            visited.add(bubble);
+            while (queue.length > 0) {
+                const current = queue.shift()!;
+                stack.push(current);
+                for (const neighbor of bubbles) {
+                    if (!visited.has(neighbor) && (isBlack || neighbor.color === current.color) && Math.abs(neighbor.x - current.x) <= BUBBLE_DIAMETER && Math.abs(neighbor.y - current.y) <= BUBBLE_DIAMETER) {
+                        queue.push(neighbor);
+                        visited.add(neighbor);
+                    }
+                }
+            }
+            if (stack.length >= 3) {
+                for (const bubble of stack) {
+                    const index = bubbles.indexOf(bubble);
+                    if (index !== -1) {
+                        bubbles.splice(index, 1);
+                    }
+                }
+            }
         }
     }
 }
@@ -102,15 +151,44 @@ canvas.addEventListener('click', () => {
     shooterBubble.dy = 5 * Math.sin(angle);
 });
 
+const bubbleCounter = document.getElementById('bubbleCounter');
+
 // Game loop
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBubbles();
     drawShooterBubble();
     updateShooterBubble();
+    if (bubbleCounter) {
+        bubbleCounter.textContent = `Remaining Bubbles: ${bubbles.length}`;
+    }
     requestAnimationFrame(gameLoop);
 }
 
 // Initialize game
 initBubbles();
 gameLoop();
+
+
+// Handle keyboard arrow keys for moving
+document.addEventListener('keydown', (event) => {
+    const speed = 5;
+    switch (event.key) {
+        case 'ArrowLeft':
+            shooterBubble.dx = -speed;
+            break;
+        case 'ArrowRight':
+            shooterBubble.dx = speed;
+            break;
+    }
+});
+
+// Handle keyboard arrow keys for stopping
+document.addEventListener('keyup', (event) => {
+    switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowRight':
+            shooterBubble.dx = 0;
+            break;
+    }
+});
