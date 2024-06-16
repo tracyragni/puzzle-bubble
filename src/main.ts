@@ -113,7 +113,7 @@ function checkForStacks(isBlack: boolean) {
                     }
                 }
             }
-            if (stack.length >= 3) {
+            if ((stack.length === 3 && isBlack) || (stack.length >= 3 && !isBlack)) {
                 for (const bubble of stack) {
                     const index = bubbles.indexOf(bubble);
                     if (index !== -1) {
